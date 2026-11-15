@@ -42,7 +42,12 @@ jobs:
             echo "::error::Нет секрета KEYSTORE_BASE64. Создайте ключ и добавьте секреты — инструкция в README.md"
             exit 1
           fi
-          echo "$KEYSTORE_BASE64" | base64 --decode > "$RUNNER_TEMP/antarkt.jks"
+          # Пробелы и переносы строк, попавшие при копировании с телефона, убираем.
+          printf '%s' "$KEYSTORE_BASE64" | tr -d '[:space:]' | base64 --decode > "$RUNNER_TEMP/antarkt.jks"
+          if [ "$(stat -c%s "$RUNNER_TEMP/antarkt.jks")" -lt 2000 ]; then
+            echo "::error::Ключ из секрета KEYSTORE_BASE64 слишком короткий — скорее всего, строка скопировалась не целиком"
+            exit 1
+          fi
           echo "ANDROID_KEYSTORE_PATH=$RUNNER_TEMP/antarkt.jks" >> "$GITHUB_ENV"
 
       - uses: gradle/actions/setup-gradle@v4
